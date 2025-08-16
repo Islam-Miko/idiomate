@@ -1,7 +1,8 @@
-from core.settings import get_settings
 from redis import asyncio as aioredis
 from redis.asyncio import Redis
+
 from core.cache.base_types import RedisBase
+from core.settings import get_settings
 
 REDIS_CLIENT: dict[int, Redis] = None
 
@@ -13,7 +14,10 @@ async def init_redis():
     REDIS_CLIENT = dict()
     for base in RedisBase:
         pool = aioredis.ConnectionPool.from_url(
-            SETTINGS.REDIS_URL, db=base, max_connections=10, decode_responses=True
+            SETTINGS.CACHE_URL,
+            db=base,
+            max_connections=10,
+            decode_responses=True,
         )
         REDIS_CLIENT[base] = aioredis.Redis(connection_pool=pool)
 

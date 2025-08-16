@@ -1,8 +1,7 @@
+from enum import Enum
 from functools import cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-from enum import Enum
 
 
 class Environment(str, Enum):
@@ -25,12 +24,13 @@ class Environment(str, Enum):
 
 
 class Settings(BaseSettings):
-    REDIS_URL: str
-    POSTGRES_URL: str
+    CACHE_URL: str
+    DATABASE_URL: str
     ENVIRONMENT: Environment = Environment.PRODUCTION
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
-    
+
+
 @cache
 def get_settings() -> Settings:
     return Settings()
