@@ -1,0 +1,2 @@
+class HasActiveQuizError(Exception):
+    pass

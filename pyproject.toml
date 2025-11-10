@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "template"
+name = "idiomate"
 version = "0.1.0"
 description = ""
 authors = ["miko <islamimanhod@gmail.com>"]
@@ -16,7 +16,9 @@ pydantic-settings = "^2.2.1"
 uvicorn = "^0.29.0"
 asyncpg = "^0.29.0"
 psycopg2-binary = "^2.9.9"
-
+aiogram = "^3.21.0"
+aiosqlite = "^0.21.0"
+openai = "^2.7.1"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.7.0"

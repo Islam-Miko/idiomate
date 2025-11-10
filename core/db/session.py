@@ -8,7 +8,7 @@ from ..settings import get_settings
 SETTINGS = get_settings()
 
 db_engine = create_async_engine(
-    SETTINGS.POSTGRES_DSN,
+    SETTINGS.DATABASE_URL,
 )
 
 SessionFactory = sessionmaker(
@@ -16,7 +16,9 @@ SessionFactory = sessionmaker(
     class_=AsyncSession,
     autoflush=False,
     autocommit=False,
+    expire_on_commit=False,
 )
+
 
 async def get_session() -> AsyncIterator[AsyncSession]:
     async with SessionFactory() as s:

@@ -26,8 +26,12 @@ class Environment(str, Enum):
 class Settings(BaseSettings):
     CACHE_URL: str
     DATABASE_URL: str
+    BOT_TOKEN: str
+    ADMIN_ID: int
+    OPENAPI_TOKEN: str
     ENVIRONMENT: Environment = Environment.PRODUCTION
-
+    MODEL: str = "gpt-3.5-turbo"
+    MODE: str = "EN"
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
