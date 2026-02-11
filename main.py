@@ -4,9 +4,9 @@ import sys
 import uvicorn
 
 from app.server import app
-from bot.main import main as bot_main
 from core.settings import get_settings
 from core.utils.logger import setup_logging
+from src.main import main as bot_main
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
