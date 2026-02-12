@@ -35,3 +35,15 @@ class IUserRepository(Protocol):
     @abstractmethod
     async def commit(self) -> None:
         pass
+
+
+class IUserStatusRepository(Protocol):
+    @abstractmethod
+    async def get_by_user_id(self, user_id: str) -> User | None:
+        """Get user status by Telegram user_id"""
+        pass
+
+    @abstractmethod
+    async def update_last_sent(self, user_id: str, last_sent: str) -> None:
+        """Update last sent time for a user"""
+        pass

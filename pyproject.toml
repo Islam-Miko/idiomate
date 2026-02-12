@@ -18,6 +18,8 @@ asyncpg = "^0.29.0"
 psycopg2-binary = "^2.9.9"
 aiogram = "^3.21.0"
 openai = "^2.7.1"
+geopy = "^2.4.1"
+folium = "^0.20.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.7.0"
@@ -25,3 +27,11 @@ pre-commit = "^3.7.0"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+ignore = ["E501"]
+select = ["E", "F", "I", "W"] # E/F - ошибки pycodestyle/flakes, I - импорты (isort), W - предупреждения

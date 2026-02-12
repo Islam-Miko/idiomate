@@ -1,11 +1,12 @@
 import logging
+from datetime import datetime
 
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.tracking.domain.entities import Coordinates, Tracking, User
+from src.tracking.domain.entities import Coordinates, Tracking, User, UserStatus
 from src.tracking.domain.protocols import ILocationRepository, IUserRepository
-from src.tracking.infrastructure.database.models import TrackingModel, UserModel
+from src.tracking.infrastructure.database.models import TrackingModel, UserModel, UserStatusModel
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +18,6 @@ class TrackingRepo(ILocationRepository):
     async def add(self, entity: Tracking) -> None:
         logger.debug(f"Adding tracking for user {entity.user_id}")
 
-        # Маппинг: Entity -> DB Model
         model = TrackingModel(
             user_id=entity.user_id,
             lat=entity.location.latitude,
@@ -42,11 +42,10 @@ class TrackingRepo(ILocationRepository):
             logger.debug(f"No previous tracking found for user {user_id}")
             return None
 
-        # Маппинг: DB Model -> Entity
         return Tracking(
             user_id=model.user_id,
             location=Coordinates(model.lat, model.lon),
-            recorded_at=model.recorded_at,  # SQLAlchemy сам вернет datetime с timezone
+            recorded_at=model.recorded_at,
         )
 
     async def commit(self) -> None:
@@ -57,13 +56,12 @@ class TrackingRepo(ILocationRepository):
         stmt = (
             select(TrackingModel)
             .where(TrackingModel.user_id == user_id)
-            .order_by(desc(TrackingModel.recorded_at))  # Самые свежие сверху
+            .order_by(desc(TrackingModel.recorded_at))
             .limit(5)
         )
         result = await self.session.execute(stmt)
         models = result.scalars().all()
 
-        # Превращаем список Моделей в список Сущностей
         entities = []
         for model in models:
             entities.append(
@@ -102,3 +100,30 @@ class UserRepo(IUserRepository):
     async def commit(self) -> None:
         await self.session.commit()
         logger.debug("User transaction committed")
+
+
+class UserStatusRepo:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def get_by_user_id(self, user_id: str) -> UserStatus | None:
+        stmt = select(UserStatusModel).where(UserStatusModel.user_id == user_id)
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+
+        if not model:
+            return None
+
+        return UserStatus(user_id=model.user_id, last_sent=model.last_sent)
+
+    async def update_last_sent(self, user_id: str, sent_at: datetime) -> None:
+        stmt = select(UserStatusModel).where(UserStatusModel.user_id == user_id)
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+
+        if not model:
+            new_model = UserStatusModel(user_id=user_id, last_sent=sent_at)
+            self.session.add(new_model)
+        else:
+            model.last_sent = sent_at
+            self.session.add(model)

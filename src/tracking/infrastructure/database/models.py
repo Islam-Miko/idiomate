@@ -24,3 +24,11 @@ class UserModel(Base):
     username: Mapped[str] = mapped_column(String(255), nullable=False)
     link: Mapped[str] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+
+
+class UserStatusModel(Base):
+    __tablename__ = "user_status"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(50), nullable=False, unique=True, index=True)
+    last_sent: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
