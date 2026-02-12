@@ -66,7 +66,7 @@ class UpdateLocationUseCase:
             logger.debug(f"Current recorded_at time: {dto.recorded_at}")
             delta = dto.recorded_at - last_sent
             logger.debug(f"Time since last location: {delta}")
-            if delta > timedelta(minutes=1):
+            if delta > timedelta(minutes=10):
                 if dto.user_id == settings.ADMIN_ONE:
                     target_id = settings.ADMIN_TWO
                 else:
