@@ -51,7 +51,7 @@ async def cmd_status(message: types.Message, get_status_use_case: GetUserStatusU
     user_id = str(message.from_user.id)
 
     if user_id not in (settings.ADMIN_ONE, settings.ADMIN_TWO):
-        await message.answer("Вы не авторизованы для использования этой команды.")
+        await message.answer("You are not authorized to view this information.")
         return
     if user_id == settings.ADMIN_ONE:
         target_id = settings.ADMIN_TWO
