@@ -10,8 +10,7 @@ class Coordinates:
     longitude: float
 
     def distance_to(self, other: "Coordinates") -> float:
-        """Считает расстояние в метрах (Haversine formula)"""
-        R = 6371000  # Радиус Земли
+        R = 6371000
         d_lat = radians(other.latitude - self.latitude)
         d_lon = radians(other.longitude - self.longitude)
 
@@ -41,3 +40,12 @@ class User:
 
     def __str__(self):
         return f"User(user_id={self.user_id}, username={self.username}, link={self.link})"
+
+
+@dataclass
+class UserStatus:
+    user_id: str
+    last_sent: datetime
+
+    def __str__(self):
+        return f"UserStatus(user_id={self.user_id}, last_sent={self.last_sent})"
