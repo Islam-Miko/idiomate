@@ -2,6 +2,7 @@ import logging
 
 from aiogram import F, Router, types
 from aiogram.filters import Command
+from aiogram.types import BufferedInputFile
 
 from src.infrastructure.settings import get_settings
 from src.tracking.application.dto import CreateUserDTO, UpdateLocationDTO
@@ -56,5 +57,11 @@ async def cmd_status(message: types.Message, get_status_use_case: GetUserStatusU
         target_id = settings.ADMIN_TWO
     else:
         target_id = settings.ADMIN_ONE
-    status = await get_status_use_case.execute(target_id)
-    await message.answer(status, parse_mode="HTML", disable_web_page_preview=True)
+    status, file_ = await get_status_use_case.execute(target_id)
+    await message.answer(
+        status,
+        parse_mode="HTML",
+        disable_web_page_preview=True,
+    )
+    if file_:
+        await message.answer_document(BufferedInputFile(file_.read(), filename=f"history_{user_id}.html"))

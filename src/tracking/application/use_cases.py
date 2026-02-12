@@ -1,10 +1,12 @@
 import logging
 from datetime import datetime, timedelta, timezone
+from io import BytesIO
+from typing import BinaryIO
 from zoneinfo import ZoneInfo
 
 from src.infrastructure.settings import get_settings
 from src.tracking.application.dto import CreateUserDTO, UpdateLocationDTO
-from src.tracking.application.protocols import IGeoService, INotifier
+from src.tracking.application.protocols import IGeoService, IMapGenerator, INotifier
 from src.tracking.domain.entities import Coordinates, Tracking, User
 from src.tracking.domain.protocols import ILocationRepository, IUserRepository, IUserStatusRepository
 
@@ -122,23 +124,28 @@ class UpdateLocationUseCase:
 
 
 class GetUserStatusUseCase:
-    def __init__(self, location_repo: ILocationRepository, user_repo: IUserRepository, geo_service: IGeoService):
+    def __init__(
+        self,
+        location_repo: ILocationRepository,
+        user_repo: IUserRepository,
+        geo_service: IGeoService,
+        map_generator: IMapGenerator,
+    ):
         self.location_repo = location_repo
         self.user_repo = user_repo
         self.geo_service = geo_service
+        self.map_generator = map_generator
 
-    async def execute(self, user_id: str) -> str:
+    async def execute(self, user_id: str) -> tuple[str, BinaryIO]:
         trackings = await self.location_repo.get_locations(user_id)
         user = await self.user_repo.get_by_user_id(user_id)
 
         username = user.username if user else "Unknown"
 
         if not trackings:
-            return f"👤 <b>User:</b> @{username}\n🚫 <b>Status:</b> No location data found."
+            return f"👤 <b>User:</b> @{username}\n🚫 <b>Status:</b> No location data found.", BytesIO()
 
         current = trackings[0]
-
-        bishkek_tz = ZoneInfo("Asia/Bishkek")
 
         recorded_at_utc = current.recorded_at
         if recorded_at_utc.tzinfo is None:
@@ -148,7 +155,7 @@ class GetUserStatusUseCase:
         duration = now_utc - recorded_at_utc
         duration_str = str(duration).split(".")[0]
 
-        curr_time_bishkek = recorded_at_utc.astimezone(bishkek_tz)
+        curr_time_bishkek = recorded_at_utc.astimezone(BISHKEK_TZ)
         curr_time_str = curr_time_bishkek.strftime("%d.%m.%Y %H:%M")
         # --------------------------------------
 
@@ -166,10 +173,10 @@ class GetUserStatusUseCase:
             f"🕒 Since: <code>{curr_time_str}</code>",
         ]
 
+        map_bytes = self.map_generator.generate_map(trackings)
         if len(trackings) > 1:
             text_lines.append("")
             text_lines.append("📋 <b>Previous History:</b>")
-
             for i in range(1, len(trackings)):
                 t_old = trackings[i]
                 t_newer = trackings[i - 1]
@@ -180,19 +187,12 @@ class GetUserStatusUseCase:
 
                 motion_status = self._get_motion_status(dist_meters, time_diff)
 
-                hist_link = f"https://2gis.kg/geo/{t_old.location.longitude},{t_old.location.latitude}"
-
                 t_utc = t_old.recorded_at.replace(tzinfo=timezone.utc)
-                hist_time_str = t_utc.astimezone(bishkek_tz).strftime("%H:%M")
-
-                line = (
-                    f"{i}️⃣ <a href='{hist_link}'>Map</a> "
-                    f"<code>{hist_time_str}</code> — "
-                    f"{motion_status} (↘️ {int(dist_meters)}m)"
-                )
+                hist_time_str = t_utc.astimezone(BISHKEK_TZ).strftime("%H:%M")
+                line = f"{i} <code>{hist_time_str}</code> — " f"{motion_status} (↘️ {int(dist_meters)}m)"
                 text_lines.append(line)
 
-        return "\n".join(text_lines)
+        return "\n".join(text_lines), map_bytes
 
     def _clean_address(self, raw_address: str) -> str:
         # Пример входа: "Kurchatova kochosu, Bishkek, Bishkek 720038, KGZ"

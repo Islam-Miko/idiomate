@@ -19,6 +19,7 @@ psycopg2-binary = "^2.9.9"
 aiogram = "^3.21.0"
 openai = "^2.7.1"
 geopy = "^2.4.1"
+folium = "^0.20.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.7.0"
