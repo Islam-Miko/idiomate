@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
     STRICT_DISTANCE_METERS: float = 50.0
     RELAXED_DISTANCE_METERS: float = 20.0
+    API_PORT: int = 8080
+    API_HOST: str = "127.0.0.1"
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
