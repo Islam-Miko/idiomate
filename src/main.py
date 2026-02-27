@@ -25,7 +25,7 @@ async def main():
 
     app = web.Application()
 
-    await start_web_server(app, host="127.0.0.1", port=8080)
+    await start_web_server(app, host=settings.API_HOST, port=settings.API_PORT)
 
     await start_bot(
         token=settings.BOT_TOKEN,
