@@ -28,10 +28,11 @@ class Settings(BaseSettings):
     BOT_TOKEN: str
     ADMIN_ONE: str
     ADMIN_TWO: str
+    MAP_PATH: str
     ENVIRONMENT: Environment = Environment.PRODUCTION
     LOG_LEVEL: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
     STRICT_DISTANCE_METERS: float = 50.0
-    RELAXED_DISTANCE_METERS: float = 15.0
+    RELAXED_DISTANCE_METERS: float = 20.0
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

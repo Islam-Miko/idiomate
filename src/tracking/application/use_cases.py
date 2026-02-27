@@ -76,18 +76,13 @@ class UpdateLocationUseCase:
                     target_id,
                     f"User {dto.user_id} has not sent location for more than 10 minutes. Last location: {location_link}",
                 )
-            await self.user_status_repo.update_last_sent(dto.user_id, dto.recorded_at)
-        else:
-            await self.user_status_repo.update_last_sent(dto.user_id, dto.recorded_at)
+        await self.user_status_repo.update_last_sent(dto.user_id, dto.recorded_at)
 
-        # 1. Конвертируем входные данные в Доменные объекты
         new_coords = Coordinates(dto.lat, dto.lon)
         recorded_at = dto.recorded_at
 
-        # 2. Получаем последнюю позицию
         last_entity = await self.repo.get_last_tracking(dto.user_id)
 
-        # 3. БИЗНЕС-ЛОГИКА: Фильтр шума
         if last_entity:
             dist = last_entity.location.distance_to(new_coords)
             logger.debug(f"Distance from last location: {dist:.2f}m")
@@ -188,7 +183,7 @@ class GetUserStatusUseCase:
                 motion_status = self._get_motion_status(dist_meters, time_diff)
 
                 t_utc = t_old.recorded_at.replace(tzinfo=timezone.utc)
-                hist_time_str = t_utc.astimezone(BISHKEK_TZ).strftime("%H:%M")
+                hist_time_str = t_utc.astimezone(BISHKEK_TZ).strftime("%d.%m.%Y %H:%M")
                 line = f"{i} <code>{hist_time_str}</code> — " f"{motion_status} (↘️ {int(dist_meters)}m)"
                 text_lines.append(line)
 
@@ -236,3 +231,17 @@ class GetUserStatusUseCase:
         if speed_kmh < 20.0:
             return f"🏃 {speed_fmt}"
         return f"🚗 {speed_fmt}"
+
+
+class GetUserStatusUseCase2:
+    def __init__(
+        self,
+        location_repo: ILocationRepository,
+    ):
+        self.location_repo = location_repo
+
+    async def execute(self, user_id: str) -> tuple[int, int]:
+        tracking = await self.location_repo.get_last_tracking(user_id)
+
+        current = tracking
+        return current.location.latitude, current.location.longitude
