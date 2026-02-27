@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Live Tracking</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+            /* Используем цвета темы Telegram для фона, пока грузится карта */
+            background-color: var(--tg-theme-bg-color, #ffffff);
+        }
+        html, body, #map {
+            height: 100vh;
+            width: 100vw;
+        }
+        /* Убираем копирайт Leaflet, чтобы не мусорил экран на мобилке (опционально) */
+        .leaflet-control-attribution {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <script>
+        // 1. Инициализация Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Разворачиваем приложение на весь экран телефона
+        tg.ready();  // Сообщаем Телеграму, что мы готовы
+
+        // 2. Достаем user_id из ссылки (пример: https://site.com/map/index.html?user_id=123)
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('user_id');
+
+        if (!userId) {
+            alert("Ошибка: Не указан user_id");
+        }
+
+        // 3. Создаем карту (по умолчанию центрируем на Бишкеке, пока грузятся данные)
+        const map = L.map('map').setView([42.8746, 74.5698], 13);
+
+        // Подключаем слой карты (OpenStreetMap)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+        }).addTo(map);
+
+        // Переменные для хранения маркера текущей позиции и линии маршрута
+        let currentMarker = null;
+        let pathLine = null;
+        let isFirstLoad = true;
+
+        // 4. Главная функция обновления данных (Short Polling)
+        async function fetchLocation() {
+            if (!userId) return;
+
+            try {
+                // Запрашиваем данные у нашего aiohttp бэкенда
+                const response = await fetch(`/idiomate/api/tracking?user_id=${userId}`);
+
+                if (!response.ok) {
+                    console.error("Ошибка сети или сервера");
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (data.status === "ok" && data.current) {
+                    const lat = data.current.lat;
+                    const lon = data.current.lon;
+                    const coords = [lat, lon];
+
+                    // --- Обновляем маркер (текущая позиция) ---
+                    if (currentMarker) {
+                        currentMarker.setLatLng(coords); // Плавно двигаем существующий маркер
+                    } else {
+                        currentMarker = L.marker(coords).addTo(map); // Создаем маркер
+                    }
+
+                    // --- Обновляем линию пути (история) ---
+                    if (data.path && data.path.length > 0) {
+                        if (pathLine) {
+                            pathLine.setLatLngs(data.path); // Перерисовываем линию
+                        } else {
+                            // Создаем синюю линию пути
+                            pathLine = L.polyline(data.path, {
+                                color: '#007aff', // Синий цвет в стиле iOS/Telegram
+                                weight: 4,
+                                opacity: 0.7,
+                                smoothFactor: 1
+                            }).addTo(map);
+                        }
+                    }
+
+                    // Если это первая успешная загрузка, центрируем камеру на юзере
+                    if (isFirstLoad) {
+                        map.setView(coords, 16); // 16 - хороший зум для уровня улиц
+                        isFirstLoad = false;
+                    }
+                }
+            } catch (error) {
+                console.error("Fetch error:", error);
+            }
+        }
+
+        // 5. Запускаем первый опрос сразу после загрузки страницы
+        fetchLocation();
+
+        // 6. МАГИЯ: Запускаем таймер, который дергает бэкенд каждые 5 секунд!
+        // 5000 миллисекунд = 5 секунд. Можно поставить 3000 для большей плавности.
+        setInterval(fetchLocation, 5000);
+
+    </script>
+</body>
+</html>

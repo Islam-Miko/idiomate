@@ -2,7 +2,8 @@ import logging
 
 from aiogram import F, Router, types
 from aiogram.filters import Command
-from aiogram.types import BufferedInputFile
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types.web_app_info import WebAppInfo
 
 from src.infrastructure.settings import get_settings
 from src.tracking.application.dto import CreateUserDTO, UpdateLocationDTO
@@ -58,10 +59,13 @@ async def cmd_status(message: types.Message, get_status_use_case: GetUserStatusU
     else:
         target_id = settings.ADMIN_ONE
     status, file_ = await get_status_use_case.execute(target_id)
-    await message.answer(
-        status,
-        parse_mode="HTML",
-        disable_web_page_preview=True,
+
+    map_url = f"{settings.MAP_PATH}/index.html?user_id={target_id}"
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text="🔴 Открыть Live-карту", web_app=WebAppInfo(url=map_url))]]
     )
-    if file_:
-        await message.answer_document(BufferedInputFile(file_.read(), filename=f"history_{user_id}.html"))
+
+    await message.answer(status, parse_mode="HTML", disable_web_page_preview=True, reply_markup=kb)
+
+    # if file_:
+    #     await message.answer_document(BufferedInputFile(file_.read(), filename=f"history_{user_id}.html"))
